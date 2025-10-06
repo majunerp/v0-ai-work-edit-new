@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    "HTTP-Referer": "https://ai-work-editprotips.vercel.app",
-    "X-Title": "AI Work Editprotips",
-  },
-});
-
 export async function POST(request: NextRequest) {
   try {
+    // 检查API密钥是否存在
+    if (!process.env.OPENROUTER_API_KEY) {
+      console.error('OPENROUTER_API_KEY is not set');
+      return NextResponse.json(
+        { error: 'API key not configured. Please set OPENROUTER_API_KEY environment variable.' },
+        { status: 500 }
+      );
+    }
+
+    const openai = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY,
+      defaultHeaders: {
+        "HTTP-Referer": "https://www.aiworkeditprotips.net",
+        "X-Title": "AI Work Editprotips",
+      },
+    });
+
     const { imageUrl, prompt, mode } = await request.json();
 
     if (!prompt) {
@@ -60,7 +69,15 @@ export async function POST(request: NextRequest) {
 
     console.log('API Response:', JSON.stringify(completion, null, 2));
 
-    const message = completion.choices[0].message;
+    const message = completion.choices[0]?.message;
+
+    if (!message) {
+      console.error('No message in response');
+      return NextResponse.json(
+        { error: 'No response from AI model' },
+        { status: 500 }
+      );
+    }
 
     // 检查响应中是否包含图片
     if ((message as any).images && (message as any).images.length > 0) {
@@ -88,10 +105,25 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error generating image:', error);
-    console.error('Error details:', error.response?.data || error.message);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+
+    if (error.response) {
+      console.error('Error response status:', error.response.status);
+      console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
+    }
+
+    const errorMessage = error.response?.data?.error?.message
+      || error.message
+      || 'Failed to generate image';
+
     return NextResponse.json(
-      { error: error.message || 'Failed to generate image' },
-      { status: 500 }
+      {
+        error: errorMessage,
+        success: false
+      },
+      { status: error.response?.status || 500 }
     );
   }
 }
