@@ -1,0 +1,14 @@
+# *
+User-agent: *
+Allow: /
+
+# *
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+
+# Host
+Host: https://www.aiworkeditprotips.net
+
+# Sitemaps
+Sitemap: https://www.aiworkeditprotips.net/sitemap.xml
