@@ -3,12 +3,20 @@
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useState, useEffect } from 'react'
 
 export function GoogleSignInButton() {
-  const supabase = createClient()
   const { t } = useLanguage()
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    setIsReady(true)
+  }, [])
 
   const handleSignIn = async () => {
+    if (!isReady) return
+
+    const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -22,6 +30,7 @@ export function GoogleSignInButton() {
       onClick={handleSignIn}
       variant="outline"
       className="flex items-center gap-2"
+      disabled={!isReady}
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path
