@@ -17,10 +17,15 @@ export function GoogleSignInButton() {
     if (!isReady) return
 
     const supabase = createClient()
+
+    // Use environment variable or current origin for redirect
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+                    (typeof window !== 'undefined' ? window.location.origin : '')
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       },
     })
   }
