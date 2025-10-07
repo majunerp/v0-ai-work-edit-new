@@ -4,12 +4,17 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Upload, ImageIcon, Wand2, Eye, Download } from "lucide-react"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { GoogleSignInButton } from "@/components/GoogleSignInButton"
+import { UserMenu } from "@/components/UserMenu"
+import { createClient } from "@/lib/supabase/client"
+import { User } from '@supabase/supabase-js'
 
 export default function HomePage() {
   const { t } = useLanguage()
+  const [user, setUser] = useState<User | null>(null)
   const [mode, setMode] = useState<"photo-edit" | "text-to-photo">("photo-edit")
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [prompt, setPrompt] = useState("")
@@ -17,6 +22,24 @@ export default function HomePage() {
   const [resultType, setResultType] = useState<"image" | "text" | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -120,12 +143,20 @@ export default function HomePage() {
             <LanguageSwitcher />
           </nav>
 
-          <Button
-            className="bg-orange-400 hover:bg-orange-500 text-white"
-            onClick={() => document.getElementById('ai-editor')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            {t('nav.startFree')}
-          </Button>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <UserMenu user={user} />
+            ) : (
+              <GoogleSignInButton />
+            )}
+
+            <Button
+              className="bg-orange-400 hover:bg-orange-500 text-white"
+              onClick={() => document.getElementById('ai-editor')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              {t('nav.startFree')}
+            </Button>
+          </div>
         </div>
       </header>
 
